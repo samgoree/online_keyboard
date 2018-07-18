@@ -1,77 +1,9 @@
 import React, { Component } from 'react';
-import '../node_modules/purecss/build/pure-min.css';
+import { PitchGrid, TonnetzGrid } from './pitchGrid.js';
+import * as constants from './constants.js';
+import './index.css';
 
 import WebMidi from '../node_modules/webmidi/webmidi.min.js';
-
-const WHITE = '#F5EDF9';
-const LIGHT_BLUE = '#79ADDC';
-const DARK_BLUE = '#5656CE';
-const GRAY = '#514F59';
-const BLACK = '#1D1128';
-
-const N_OCTAVES = 3;
-
-
-function PitchMonitor(props) {
-  return(
-    <td style={{backgroundColor:props.color}}>
-      {props.noteName}
-    </td>
-  );
-};
-
-
-class PitchGrid extends Component {
-
-  renderPitchMonitor(i){
-    return (
-      <PitchMonitor
-        noteName={noteName(i)}
-        color={this.props.noteState[i] === 0 ? WHITE : LIGHT_BLUE}
-        key={i}
-      />
-    );
-  }
-
-  render() {
-    var rows = [];
-    for (var i = 0; i < N_OCTAVES; i++){
-      rows.push(
-        <tr>
-          {this.renderPitchMonitor(12 * i)}
-          {this.renderPitchMonitor(12 * i + 1)}
-          {this.renderPitchMonitor(12 * i + 2)}
-          {this.renderPitchMonitor(12 * i + 3)}
-        </tr>
-      );
-      rows.push(
-        <tr>
-          {this.renderPitchMonitor(12 * i + 4)}
-          {this.renderPitchMonitor(12 * i + 5)}
-          {this.renderPitchMonitor(12 * i + 6)}
-          {this.renderPitchMonitor(12 * i + 7)}
-        </tr>
-      );
-      rows.push(
-        <tr>
-          {this.renderPitchMonitor(12 * i + 8)}
-          {this.renderPitchMonitor(12 * i + 9)}
-          {this.renderPitchMonitor(12 * i + 10)}
-          {this.renderPitchMonitor(12 * i + 11)}
-        </tr>
-      );
-    }
-    return (
-      <div>
-        <table className="pure-table pure-table-bordered">
-          <tbody>
-           {rows}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-}
 
 function SelectOption(props){
   var text = '';
@@ -111,51 +43,6 @@ class SelectMenu extends React.Component {
   }
 }
 
-const pieces = {
-  'None': [
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    []
-  ],
-  'A': [
-    [12, 7, 4],
-    [13, 10, 6],
-    [14, 9, 6],
-    [15, 12, 8],
-    [16, 12, 7],
-    [17, 12, 9],
-    [18, 14, 9],
-    [19, 14, 11],
-    [20, 15, 12],
-    [21, 17, 12],
-    [22, 17, 14],
-    [23, 19, 14]
-  ],
-  'B': [
-    [3, 9, 12],
-    [2, 4, 9, 13],
-    [6, 11, 14],
-    [6, 9, 15],
-    [7, 11, 14, 16],
-    [12, 15, 17],
-    [10, 13, 18],
-    [12, 16, 19],
-    [8, 15, 20],
-    [14, 19, 21],
-    [14, 20, 22],
-    [14, 18, 23],
-  ]
-};
-
 const inputModes = {
   'Default': {
     'down': (midiNumber, state) => {
@@ -168,6 +55,21 @@ const inputModes = {
     'up': (midiNumber, state) => {
       state.noteState[midiNumber - 48] = 0;
       state.output.stopNote(midiNumber, state.channel);
+      return state;
+    }
+  },
+  'Reverse': {
+    'down': (midiNumber, state) => {
+      if (state.noteState[72 - midiNumber] === 0){
+        state.noteState[72 - midiNumber] = 1;
+        state.output.playNote(72 - midiNumber + 48, state.channel);
+      }
+      return state;
+    },
+    'up': (midiNumber, state) => {
+      console.log(midiNumber, 72 - midiNumber)
+      state.noteState[72 - midiNumber] = 0;
+      state.output.stopNote(72 - midiNumber + 48, state.channel);
       return state;
     }
   },
@@ -204,14 +106,14 @@ const inputModes = {
       return state;
     }
   },
-  'Triad': {
+  'Chords': {
     'down': (midiNumber, state) => {
       var note = 0;
       const offset = Math.floor(midiNumber / 12) * 12;
       const i = mod(midiNumber, 12);
       if(state.noteState[midiNumber - 48 + 12] === 0){
-        for(var j = 0; j < pieces[state.piece][i].length; j++){
-          note = offset + pieces[state.piece][i][j] - 48;
+        for(var j = 0; j < constants.pieces[state.piece][i].length; j++){
+          note = offset + constants.pieces[state.piece][i][j] - 48;
           state.noteState[note] = 1;
           state.output.playNote(note + 48, state.channel);
         }
@@ -222,23 +124,23 @@ const inputModes = {
       const offset = Math.floor(midiNumber / 12) * 12;
       var note = 0;
       const i = mod(midiNumber, 12);
-      for(var j = 0; j < pieces[state.piece][i].length; j++){
-        note = offset + pieces[state.piece][i][j] - 48;
+      for(var j = 0; j < constants.pieces[state.piece][i].length; j++){
+        note = offset + constants.pieces[state.piece][i][j] - 48;
         state.output.stopNote(note + 48, state.channel);
         state.noteState[note] = 0;
       }
       return state;
     }
   },
-  'Triad Pulse': {
+  'Chord Pulse': {
     // this one looks less like an instrument configuration
     // and more like a composition on its own
     'down': (midiNumber, state) => {
       const offset = Math.floor(midiNumber / 12) * 12;
       const i = mod(midiNumber, 12);
       if(state.noteState[midiNumber - 48 + 12] === 0){
-        for(var j = 0; j < pieces[state.piece][i].length; j++){
-          state = pulseNote(offset + pieces[state.piece][i][j], state);
+        for(var j = 0; j < constants.pieces[state.piece][i].length; j++){
+          state = pulseNote(offset + constants.pieces[state.piece][i][j], state);
         }
       }
       return state;
@@ -247,8 +149,8 @@ const inputModes = {
       const offset = Math.floor(midiNumber / 12) * 12;
       var note = 0;
       const i = mod(midiNumber, 12);
-      for(var j = 0; j < pieces[state.piece][i].length; j++){
-        note = offset + pieces[state.piece][i][j] - 48;
+      for(var j = 0; j < constants.pieces[state.piece][i].length; j++){
+        note = offset + constants.pieces[state.piece][i][j] - 48;
         clearInterval(state.noteState[note]);
         state.output.stopNote(note + 48, state.channel);
         state.noteState[note] = 0;
@@ -294,6 +196,7 @@ const inputModes = {
     }
   },
   'Riemann': {
+    // TODO: figure out how to avoid awkward non-synchronized pitches, either restart everything or do it differently
     'down': (midiNumber, state) => {
       const currentNotes = getCurrentNotes(state);
       if (currentNotes.length === 0){
@@ -323,39 +226,47 @@ const inputModes = {
           fifth = currentNotes[2];
         }
         const minor = (mod(third.number - root.number, 12) === 3);
+
+        clearInterval(root.intervalId);
+        clearInterval(third.intervalId);
+        clearInterval(fifth.intervalId);
+
         if (transformation === 0){
           //tranform to parallel
           if(minor){
-            clearInterval(third.intervalId);
             state.noteState[third.number] = 0;
             state = pulseNote(third.number + 1 + 48, state);
           } else {
-            clearInterval(third.intervalId);
             state.noteState[third.number] = 0;
             state = pulseNote(third.number - 1 + 48, state);
           }
+          state = pulseNote(root.number + 48, state);
+          state = pulseNote(fifth.number + 48, state);
         } else if (transformation === 1){
           // transform to relative major/minor
           if(minor){
-            clearInterval(root.intervalId);
+            
             state.noteState[root.number] = 0;
             state = pulseNote(root.number - 2 + 48, state);
+            state = pulseNote(fifth.number + 48, state);
           } else {
-            clearInterval(fifth.intervalId);
             state.noteState[fifth.number] = 0;
             state = pulseNote(fifth.number + 2 + 48, state);
+            state = pulseNote(root.number + 48, state);
           }
+          state = pulseNote(third.number + 48, state);
         } else if (transformation === 2){
           // leading tone exchange
           if(minor){
-            clearInterval(fifth.intervalId);
             state.noteState[fifth.number] = 0;
             state = pulseNote(fifth.number + 1 + 48, state);
+            state = pulseNote(root.number + 48, state);
           } else {
-            clearInterval(root.intervalId);
             state.noteState[root.number] = 0;
             state = pulseNote(root.number - 1 + 48, state);
+            state = pulseNote(fifth.number + 48, state);
           }
+          state = pulseNote(third.number + 48, state);
         }
       }
     },
@@ -370,7 +281,7 @@ class App extends Component {
   constructor(props){
     super(props);
     var noteStateArr = [];
-    for (var i = 0; i < N_OCTAVES * 12; i++){
+    for (var i = 0; i < constants.N_OCTAVES * 12; i++){
       noteStateArr.push(0)
     }
     // input/output should be midi connections
@@ -459,7 +370,7 @@ class App extends Component {
     var state = this.state;
     state.mode = e.target.value;
     var noteStateArr = [];
-    for (var i = 0; i < N_OCTAVES * 12; i++){
+    for (var i = 0; i < constants.N_OCTAVES * 12; i++){
       noteStateArr.push(0);
       if(this.state.noteState[i] > 2){
         clearInterval(this.state.noteState[i]);
@@ -472,7 +383,7 @@ class App extends Component {
     var state = this.state;
     state.piece = e.target.value;
     var noteStateArr = [];
-    for (var i = 0; i < N_OCTAVES * 12; i++){
+    for (var i = 0; i < constants.N_OCTAVES * 12; i++){
       noteStateArr.push(0);
       if(this.state.noteState[i] > 2){
         clearInterval(this.state.noteState[i]);
@@ -482,49 +393,71 @@ class App extends Component {
     this.setState(state);
   }
   render() {
+    const menuTextStyle = {color:"#F5EDF9", border: "1px solid #191818"};
+    const divStyle = {padding: "8px"};
     var pieceChooser = null;
-    if(this.state.mode === 'Triad' || this.state.mode === 'Triad Pulse'){
+    // figure out if we need a piece chooser option
+    if(this.state.mode === 'Chords' || this.state.mode === 'Chord Pulse'){
       pieceChooser = (
-        <div>
-        <p>Choose a Piece:</p>
+        <div style={divStyle}>
+        <p style={menuTextStyle}>Choose a Piece:</p>
         <SelectMenu
           value={this.state.piece}
-          options={Object.keys(pieces)}
+          options={Object.keys(constants.pieces)}
           handleChange={(e) => this.handlePieceChange(e)}
         /></div>);
     } else {
       pieceChooser = (<div/>);
     }
+
+    // figure out if we want the standard layout or the Tonnetz
+    var grid = null;
+    if(this.state.mode === 'Riemann'){
+      grid = (
+        <TonnetzGrid
+          noteState={this.state.noteState}
+        />
+      );
+    } else {
+      grid = (
+        <PitchGrid
+          noteState={this.state.noteState}
+        />
+      );
+    }
+
     return (
-      <div className="pure-g">
-        <div className="pure-u-1-5"/>
-        <div className="pure-u-1-5">
-          <div>
-            <p>MIDI Input:</p>
+      <div id="layout">
+        <a href="#menu" id="menuLink" class="menu-link">
+          <span></span>
+        </a>
+        <div id="menu">
+          <div style={divStyle}>
+            <p style={menuTextStyle}>MIDI Input:</p>
             <SelectMenu
               value={this.state.inputName}
               options={this.state.inputOptions}
               handleChange={(e) => this.handleInputChange(e)}
             />
           </div>
-          <div>
-            <p>MIDI Output:</p>
+          <div style={divStyle}>
+            <p style={menuTextStyle}>MIDI Output:</p>
             <SelectMenu
               value={this.state.outputName}
               options={this.state.outputOptions}
               handleChange={(e) => this.handleOutputChange(e)}
             />
           </div>
-          <div>
-            <p>Synth Channel:</p>
+          <div style={divStyle}>
+            <p style={menuTextStyle}>Synth Channel:</p>
             <SelectMenu
               value={this.state.channel}
               options={[...Array(16).keys()]}
               handleChange={(e) => this.handleChannelChange(e)}
             />
           </div>
-          <div>
-            <p>Input Mode:</p>
+          <div style={divStyle}>
+            <p style={menuTextStyle}>Input Mode:</p>
             <SelectMenu
               value={this.state.mode}
               options={Object.keys(inputModes)}
@@ -533,13 +466,18 @@ class App extends Component {
           </div>
           {pieceChooser}
         </div>
-        <div className="pure-u-1-5">
-          <h2>Midi Keyboard</h2>
-          <PitchGrid
-            noteState={this.state.noteState}
-          />
+        <div id="main">
+          <div class="header">
+            <h2>Midi Keyboard</h2>
+          </div>
+          <div class="content">
+            <div class="pure-g">
+              <div class="pure-u-1-3">
+                {grid}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="pure-u-2-5"></div>
       </div>
     );
   }
@@ -557,65 +495,8 @@ function handleNoteRelease(midiNumber, state){
   return inputModes[state.mode]['up'](midiNumber, state);
 }
 
-const noteNames = [
-  'C ',
-  'C#',
-  'D ',
-  'D#',
-  'E ',
-  'F ',
-  'F#',
-  'G ',
-  'G#',
-  'A ',
-  'A#',
-  'B '
-]
-
-function noteName(number){
-  var octave = Math.floor(number / 12);
-  var name = noteNames[number % 12];
-  return name + String(octave);
-}
-
-const keyboardCharacterMap = {
-    'a': 0,
-    'w': 1,
-    's': 2,
-    'e': 3,
-    'd': 4,
-    'f': 5,
-    't': 6,
-    'g': 7,
-    'y': 8,
-    'h': 9,
-    'u': 10,
-    'j': 11,
-    'k': 12,
-    'o': 13,
-    'l': 14,
-    'p': 15,
-    ';': 16,
-    'A': 17,
-    'W': 18,
-    'S': 19,
-    'E': 20,
-    'D': 21,
-    'F': 22,
-    'T': 23,
-    'G': 24,
-    'Y': 25,
-    'H': 26,
-    'U': 27,
-    'J': 28,
-    'K': 29,
-    'O': 30,
-    'L': 31,
-    'P': 40
-  };
-
 function keyToNote(character){
-  var value = keyboardCharacterMap[character];
+  var value = constants.keyboardCharacterMap[character];
   if (!isNaN(value)) {
     return value + 48;
   } else {
@@ -651,12 +532,12 @@ function shepardTone(pitchNumber, state){
     console.log("Warning: shepardTone pitch was greater than 12");
     pitchNumber %= 12;
   }
-  for(var i = 0; i < N_OCTAVES; i++){
+  for(var i = 0; i < constants.N_OCTAVES; i++){
     const velocity = 0.5 - Math.pow(
-      (i - (N_OCTAVES/2)),
+      (i - (constants.N_OCTAVES/2)),
       2
     ) / Math.pow(
-      (N_OCTAVES/2),
+      (constants.N_OCTAVES/2),
       2
     );
     const noteNumber = pitchNumber + i * 12
