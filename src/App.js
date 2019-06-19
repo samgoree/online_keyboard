@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { PitchGrid, TonnetzGrid } from './pitchGrid.js';
+import { PitchGrid, TonnetzGrid, CircleOfFifthsGrid } from './pitchGrid.js';
 import * as constants from './constants.js';
 import './index.css';
 
@@ -43,34 +43,44 @@ class SelectMenu extends React.Component {
   }
 }
 
+function playNote(midiNumber, state){
+    if (state.noteState[midiNumber - 48] === 0){
+      state.noteState[midiNumber - 48] = 1;
+      state.output.playNote(midiNumber, state.channel);
+    }
+    return state;
+}
+
+function replayNote(midiNumber, state){
+    if (state.noteState[midiNumber - 48] !== 0){
+      state.output.stopNote(midiNumber, state.channel);
+    }
+    state.noteState[midiNumber - 48] = 1;
+    state.output.playNote(midiNumber, state.channel);
+    return state
+}
+
+function releaseNote(midiNumber, state){
+    state.noteState[midiNumber - 48] = 0;
+    state.output.stopNote(midiNumber, state.channel);
+    return state;
+}
+
 const inputModes = {
   'Default': {
     'down': (midiNumber, state) => {
-      if (state.noteState[midiNumber - 48] === 0){
-        state.noteState[midiNumber - 48] = 1;
-        state.output.playNote(midiNumber, state.channel);
-      }
-      return state;
+      return playNote(midiNumber, state);
     },
     'up': (midiNumber, state) => {
-      state.noteState[midiNumber - 48] = 0;
-      state.output.stopNote(midiNumber, state.channel);
-      return state;
+      return releaseNote(midiNumber, state);
     }
   },
   'Reverse': {
     'down': (midiNumber, state) => {
-      if (state.noteState[72 - midiNumber] === 0){
-        state.noteState[72 - midiNumber] = 1;
-        state.output.playNote(72 - midiNumber + 48, state.channel);
-      }
-      return state;
+      return playNote(120 - midiNumber, state);
     },
     'up': (midiNumber, state) => {
-      console.log(midiNumber, 72 - midiNumber)
-      state.noteState[72 - midiNumber] = 0;
-      state.output.stopNote(72 - midiNumber + 48, state.channel);
-      return state;
+      return releaseNote(120 - midiNumber, state);
     }
   },
   'Sticky': {
@@ -195,14 +205,29 @@ const inputModes = {
       return state;
     }
   },
+  'Circle of Fifths':{
+    'down': (midiNumber, state) => {
+      return playNote(midiNumber, state);
+    },
+    'up': (midiNumber, state) => {
+      return releaseNote(midiNumber, state);
+    }
+  },
+  'Tonnetz': {
+    'down': (midiNumber, state) => {
+      return playNote(midiNumber, state);
+    },
+    'up': (midiNumber, state) => {
+      return releaseNote(midiNumber, state);
+    }
+  },
   'Riemann': {
-    // TODO: figure out how to avoid awkward non-synchronized pitches, either restart everything or do it differently
     'down': (midiNumber, state) => {
       const currentNotes = getCurrentNotes(state);
       if (currentNotes.length === 0){
-        pulseNote(60, state);
-        pulseNote(64, state);
-        pulseNote(67, state);
+        playNote(60, state);
+        playNote(64, state);
+        playNote(67, state);
       } else {
         const transformation = mod(midiNumber, 3);
         const firstInterval = currentNotes[1].number - currentNotes[0].number;
@@ -235,38 +260,38 @@ const inputModes = {
           //tranform to parallel
           if(minor){
             state.noteState[third.number] = 0;
-            state = pulseNote(third.number + 1 + 48, state);
+            state = replayNote(third.number + 1 + 48, state);
           } else {
             state.noteState[third.number] = 0;
-            state = pulseNote(third.number - 1 + 48, state);
+            state = replayNote(third.number - 1 + 48, state);
           }
-          state = pulseNote(root.number + 48, state);
-          state = pulseNote(fifth.number + 48, state);
+          state = replayNote(root.number + 48, state);
+          state = replayNote(fifth.number + 48, state);
         } else if (transformation === 1){
           // transform to relative major/minor
           if(minor){
             
             state.noteState[root.number] = 0;
-            state = pulseNote(root.number - 2 + 48, state);
-            state = pulseNote(fifth.number + 48, state);
+            state = replayNote(root.number - 2 + 48, state);
+            state = replayNote(fifth.number + 48, state);
           } else {
             state.noteState[fifth.number] = 0;
-            state = pulseNote(fifth.number + 2 + 48, state);
-            state = pulseNote(root.number + 48, state);
+            state = replayNote(fifth.number + 2 + 48, state);
+            state = replayNote(root.number + 48, state);
           }
-          state = pulseNote(third.number + 48, state);
+          state = replayNote(third.number + 48, state);
         } else if (transformation === 2){
           // leading tone exchange
           if(minor){
             state.noteState[fifth.number] = 0;
-            state = pulseNote(fifth.number + 1 + 48, state);
-            state = pulseNote(root.number + 48, state);
+            state = replayNote(fifth.number + 1 + 48, state);
+            state = replayNote(root.number + 48, state);
           } else {
             state.noteState[root.number] = 0;
-            state = pulseNote(root.number - 1 + 48, state);
-            state = pulseNote(fifth.number + 48, state);
+            state = replayNote(root.number - 1 + 48, state);
+            state = replayNote(fifth.number + 48, state);
           }
-          state = pulseNote(third.number + 48, state);
+          state = replayNote(third.number + 48, state);
         }
       }
     },
@@ -319,14 +344,14 @@ class App extends Component {
       self.setState(state);
     });
     document.addEventListener("keydown", (event) =>{
-      var note = keyToNote(event.key);
+      var note = keyToNote(event.key, self.state);
       if (note){
         var state = handleNotePress(note, self.state);
         self.setState(state);
       }
     });
     document.addEventListener("keyup", (event) =>{
-      var note = keyToNote(event.key);
+      var note = keyToNote(event.key, self.state);
       if (note){
         var state = handleNoteRelease(note, self.state);
         self.setState(state);
@@ -340,17 +365,7 @@ class App extends Component {
     state.inputName = value;
     state.input = WebMidi.getInputByName(state.inputName);
     // add listeners for note on and off
-    var self = this;
-    state.input.addListener('noteon', "all", function(e) {
-      var state = self.state;
-      state = handleNotePress(e.note.number, state);
-      self.setState(state);
-    });
-    state.input.addListener('noteoff', "all", function(e) {
-      var state = self.state;
-      state = handleNoteRelease(e.note.number, state);
-      self.setState(state);
-    });
+    this.changeMidiListeners(state);
     this.setState(state);
   }
   handleOutputChange(e){
@@ -358,7 +373,7 @@ class App extends Component {
     var state = this.state;
     state.outputName = value;
     state.output = WebMidi.getOutputByName(state.outputName);
-
+    this.changeMidiListeners(state);
     this.setState(state);
   }
   handleChannelChange(e){
@@ -377,7 +392,36 @@ class App extends Component {
       }
     }
     state.noteState = noteStateArr;
+    // TODO: change this on circle of fifths to work with keyboard
     this.setState(state);
+    this.changeMidiListeners(state);
+  }
+  changeMidiListeners(state){
+    var self = this;
+    state.input.removeListener('noteon');
+    state.input.addListener('noteon', "all", function(e) {
+      var state = self.state;
+      var noteNumber = null;
+      if(state.mode === 'Circle of Fifths'){
+        noteNumber = convertCircleOfFifthsMidiInput(e.note.number);
+      }else{
+        noteNumber = e.note.number
+      }
+      state = handleNotePress(noteNumber, state);
+      self.setState(state);
+    });
+    state.input.removeListener('noteoff');
+    state.input.addListener('noteoff', "all", function(e) {
+      var state = self.state;
+      var noteNumber = null;
+      if(state.mode === 'Circle of Fifths'){
+        noteNumber = convertCircleOfFifthsMidiInput(e.note.number);
+      }else{
+        noteNumber = e.note.number
+      }
+      state = handleNoteRelease(noteNumber, state);
+      self.setState(state);
+    });
   }
   handlePieceChange(e){
     var state = this.state;
@@ -412,9 +456,15 @@ class App extends Component {
 
     // figure out if we want the standard layout or the Tonnetz
     var grid = null;
-    if(this.state.mode === 'Riemann'){
+    if(this.state.mode === 'Riemann' || this.state.mode === 'Tonnetz'){
       grid = (
         <TonnetzGrid
+          noteState={this.state.noteState}
+        />
+      );
+    } else if(this.state.mode === 'Circle of Fifths'){
+      grid = (
+        <CircleOfFifthsGrid
           noteState={this.state.noteState}
         />
       );
@@ -485,7 +535,7 @@ class App extends Component {
 
 export default App;
 
-// Helper functions
+// Helper functions 
 
 function handleNotePress(midiNumber, state){
   return inputModes[state.mode]['down'](midiNumber, state);
@@ -495,13 +545,25 @@ function handleNoteRelease(midiNumber, state){
   return inputModes[state.mode]['up'](midiNumber, state);
 }
 
-function keyToNote(character){
-  var value = constants.keyboardCharacterMap[character];
+function keyToNote(character, state){
+  var value = null;
+  if(state.mode === 'Tonnetz'){
+    value = constants.tonnetzKeyboardCharacterMap[character];
+  }else if(state.mode === 'Circle of Fifths'){
+    value = constants.circleOfFifthsKeyboardCharacterMap[character];
+  }else{
+    value = constants.keyboardCharacterMap[character];
+  }
   if (!isNaN(value)) {
     return value + 48;
   } else {
     return null;
   }
+}
+
+function convertCircleOfFifthsMidiInput(midiNumber){
+  var octave = Math.floor((midiNumber-5)/12);
+  return 12 * octave + constants.circleOfFifthsMidiMap[mod(midiNumber, 12)];
 }
 
 

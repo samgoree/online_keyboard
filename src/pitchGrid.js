@@ -134,3 +134,45 @@ export class TonnetzGrid extends Component {
     );
   }
 }
+
+export class CircleOfFifthsGrid extends Component {
+
+  renderPitchMonitor(i){
+    return (
+      <PitchMonitor
+        noteName={noteName(i)}
+        color={this.props.noteState[i] === 0 ? constants.WHITE : constants.LIGHT_BLUE}
+        key={i}
+      />
+    );
+  }
+
+  render() {
+    var rows = [];
+    for (var i = 0; i < constants.N_OCTAVES * 12; i+=12){
+      rows.push(BlankHexagon());
+      rows.push(this.renderPitchMonitor(i + 7));
+      rows.push(this.renderPitchMonitor(i + 9));
+      rows.push(this.renderPitchMonitor(i + 11));
+      rows.push(BlankHexagon());
+      rows.push(this.renderPitchMonitor(i + 1));
+      rows.push(this.renderPitchMonitor(i + 10));
+      
+      rows.push(this.renderPitchMonitor(i));
+      rows.push(this.renderPitchMonitor(i + 2));
+      rows.push(this.renderPitchMonitor(i + 4));
+      rows.push(this.renderPitchMonitor(i + 6));
+      rows.push(this.renderPitchMonitor(i + 8));
+      rows.push(this.renderPitchMonitor(i + 3));
+      rows.push(this.renderPitchMonitor(i + 5));
+
+    }
+    return (
+      <div>
+        <ul id="grid" className="clear">
+          {rows}
+        </ul>
+      </div>
+    );
+  }
+}
