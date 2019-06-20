@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { PitchGrid, TonnetzGrid, CircleOfFifthsGrid } from './pitchGrid.js';
+import { PitchGrid, TonnetzGrid, CircleOfFifthsGrid, AccordionGrid } from './pitchGrid.js';
 import * as constants from './constants.js';
 import './index.css';
 
@@ -81,6 +81,28 @@ const inputModes = {
     },
     'up': (midiNumber, state) => {
       return releaseNote(120 - midiNumber, state);
+    }
+  },
+  'Stradella': {
+    'down': (midiNumber, state) => {
+      if(Array.isArray(midiNumber)){
+        for(var i = 0; i < midiNumber.length; i++){
+          state = playNote(midiNumber[i], state);
+        }
+        return state;
+      }else{
+        return playNote(midiNumber, state);
+      }
+    },
+    'up': (midiNumber, state) => {
+      if (Array.isArray(midiNumber)){
+        for(var i = 0; i < midiNumber.length; i++){
+          state = releaseNote(midiNumber[i], state);
+        }
+        return state;
+      }else{
+        return releaseNote(midiNumber, state);
+      }
     }
   },
   'Sticky': {
@@ -398,6 +420,7 @@ class App extends Component {
   }
   changeMidiListeners(state){
     var self = this;
+    console.log(state.input);
     state.input.removeListener('noteon');
     state.input.addListener('noteon', "all", function(e) {
       var state = self.state;
@@ -551,10 +574,15 @@ function keyToNote(character, state){
     value = constants.tonnetzKeyboardCharacterMap[character];
   }else if(state.mode === 'Circle of Fifths'){
     value = constants.circleOfFifthsKeyboardCharacterMap[character];
+  }else if(state.mode === 'Stradella'){
+    value = constants.stradellaKeyboardCharacterMap[character];
   }else{
     value = constants.keyboardCharacterMap[character];
   }
-  if (!isNaN(value)) {
+  if(Array.isArray(value)){
+    value = value.map(x => x + 48);
+    return value;
+  }else if (!isNaN(value)) {
     return value + 48;
   } else {
     return null;

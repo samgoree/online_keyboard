@@ -73,56 +73,56 @@ export class PitchGrid extends Component {
 
 export class TonnetzGrid extends Component {
 
-  renderPitchMonitor(i){
+  renderPitchMonitor(number, pk){
   	var white = true;
   	for (var octave = 0; octave < constants.N_OCTAVES; octave++){
-  		if(this.props.noteState[i + 12 * octave] !== 0){
+  		if(this.props.noteState[number + 12 * octave] !== 0){
   			white = false;
   		}
   	}
     return (
       <PitchMonitor
-        noteName={noteName(i)}
+        noteName={noteName(number)}
         color={white ? constants.WHITE : constants.LIGHT_BLUE}
-        key={i}
+        key={pk}
       />
     );
   }
 
   render() {
     var rows = [];
-    rows.push(this.renderPitchMonitor(3));
-    rows.push(this.renderPitchMonitor(10));
-    rows.push(this.renderPitchMonitor(5));
-    rows.push(this.renderPitchMonitor(0));
-    rows.push(this.renderPitchMonitor(7));
-    rows.push(this.renderPitchMonitor(2));
-    rows.push(this.renderPitchMonitor(9));
+    rows.push(this.renderPitchMonitor(3, 1));
+    rows.push(this.renderPitchMonitor(10, 2));
+    rows.push(this.renderPitchMonitor(5, 3));
+    rows.push(this.renderPitchMonitor(0, 4));
+    rows.push(this.renderPitchMonitor(7, 5));
+    rows.push(this.renderPitchMonitor(2, 6));
+    rows.push(this.renderPitchMonitor(9, 7));
 
-    rows.push(this.renderPitchMonitor(0));
-    rows.push(this.renderPitchMonitor(7));
-    rows.push(this.renderPitchMonitor(2));
-    rows.push(this.renderPitchMonitor(9));
-    rows.push(this.renderPitchMonitor(4));
-    rows.push(this.renderPitchMonitor(11));
-    rows.push(this.renderPitchMonitor(6));
+    rows.push(this.renderPitchMonitor(0, 8));
+    rows.push(this.renderPitchMonitor(7, 9));
+    rows.push(this.renderPitchMonitor(2, 10));
+    rows.push(this.renderPitchMonitor(9, 11));
+    rows.push(this.renderPitchMonitor(4, 12));
+    rows.push(this.renderPitchMonitor(11, 13));
+    rows.push(this.renderPitchMonitor(6, 14));
 
-	rows.push(this.renderPitchMonitor(9));
-    rows.push(this.renderPitchMonitor(4));
-    rows.push(this.renderPitchMonitor(11));
-    rows.push(this.renderPitchMonitor(6));
-    rows.push(this.renderPitchMonitor(1));
-    rows.push(this.renderPitchMonitor(8));
-    rows.push(this.renderPitchMonitor(3));
+	  rows.push(this.renderPitchMonitor(9, 15));
+    rows.push(this.renderPitchMonitor(4, 16));
+    rows.push(this.renderPitchMonitor(11, 17));
+    rows.push(this.renderPitchMonitor(6, 18));
+    rows.push(this.renderPitchMonitor(1, 19));
+    rows.push(this.renderPitchMonitor(8, 20));
+    rows.push(this.renderPitchMonitor(3, 21));
 
-    rows.push(this.renderPitchMonitor(6));
-    rows.push(this.renderPitchMonitor(1));
-    rows.push(this.renderPitchMonitor(8));
-    rows.push(this.renderPitchMonitor(3));
-	rows.push(this.renderPitchMonitor(10));
-    rows.push(this.renderPitchMonitor(5));
-    rows.push(this.renderPitchMonitor(0));
-    rows.push(this.renderPitchMonitor(7));
+    rows.push(this.renderPitchMonitor(6, 22));
+    rows.push(this.renderPitchMonitor(1, 23));
+    rows.push(this.renderPitchMonitor(8, 24));
+    rows.push(this.renderPitchMonitor(3, 25));
+	  rows.push(this.renderPitchMonitor(10, 26));
+    rows.push(this.renderPitchMonitor(5, 27));
+    rows.push(this.renderPitchMonitor(0, 28));
+    rows.push(this.renderPitchMonitor(7, 29));
 
     
     return (
