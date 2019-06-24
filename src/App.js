@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { PitchGrid, TonnetzGrid, CircleOfFifthsGrid, AccordionGrid } from './pitchGrid.js';
+import { PitchGrid, TonnetzGrid, CircleOfFifthsGrid } from './pitchGrid.js';
 import * as constants from './constants.js';
 import './index.css';
 
