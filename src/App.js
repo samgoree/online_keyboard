@@ -143,7 +143,8 @@ const inputModes = {
       var note = 0;
       const offset = Math.floor(midiNumber / 12) * 12;
       const i = mod(midiNumber, 12);
-      if(state.noteState[midiNumber - 48 + 12] === 0){
+      const test_pitch = constants.pieces[state.piece][i][0]
+      if(state.noteState[ test_pitch ] === 0 && state.noteState[ test_pitch + 12] === 0){
         for(var j = 0; j < constants.pieces[state.piece][i].length; j++){
           note = offset + constants.pieces[state.piece][i][j] - 48;
           state.noteState[note] = 1;
